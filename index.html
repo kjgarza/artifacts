@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artifacts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--ink:#1C1A17;--ink-soft:#4A453D;--muted:#6F6858;--paper:#F5F2EA;--surface:#ECE6D8;--line:#D8D0BE;--accent:#2B5F63;--accent-soft:#DCE8E7;--radius:10px}
+@media (prefers-color-scheme:dark){:root{--ink:#EDE7D9;--ink-soft:#C7BFAE;--muted:#A39B88;--paper:#16140F;--surface:#201C15;--line:#3A3225;--accent:#6FAFB0;--accent-soft:#223333}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 Archivo,-apple-system,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:28px;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 24px}
+.controls{display:grid;gap:12px;margin-bottom:20px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input,select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px}
+input[type=search]{flex:1 1 240px}
+label{color:var(--muted);font-size:13px}
+.chip{font:500 13px 'IBM Plex Mono',monospace;background:transparent;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;min-height:32px}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.chip small{opacity:.7;margin-left:4px}
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-bottom:12px}
+button.link{background:none;border:0;color:var(--accent);cursor:pointer;font:inherit;text-decoration:underline}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.card{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;color:inherit;text-decoration:none}
+.card:hover,.card:focus-visible{border-color:var(--accent);outline:none;box-shadow:0 0 0 2px var(--accent-soft)}
+.card h2{font-size:17px;margin:0}
+.card p{margin:0;color:var(--ink-soft);font-size:14px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card .foot{margin-top:auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:12px 'IBM Plex Mono',monospace;color:var(--muted)}
+.tag{background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:1px 6px}
+.empty{text-align:center;color:var(--muted);padding:48px 0}
+</style>
+</head>
+<body>
+<main>
+<h1>Artifacts</h1>
+<p class="sub">Things Claude made. Search, filter, open.</p>
+<div class="controls">
+  <div class="row">
+    <input type="search" id="q" placeholder="Search title, description, tags" aria-label="Search">
+    <select id="sort" aria-label="Sort"><option value="new">Newest</option><option value="old">Oldest</option><option value="title">Title A-Z</option></select>
+  </div>
+  <div class="row"><label for="from">From</label><input type="month" id="from"><label for="to">To</label><input type="month" id="to"></div>
+  <div class="row" id="kinds" aria-label="Kind"></div>
+  <div class="row" id="tags" aria-label="Tags"></div>
+</div>
+<div class="meta"><span id="count"></span><button class="link" id="clear" hidden>Clear filters</button></div>
+<div class="grid" id="grid"></div>
+<div class="empty" id="empty" hidden>No artifacts match. <button class="link" id="clear2">Clear filters</button></div>
+</main>
+<script>
+const DATA = [{"slug":"task-control","title":"Task Control","description":"Task Control","tags":[],"kind":"other","created":"2026-10-19"}];
+const $ = (id) => document.getElementById(id);
+const state = { q: '', sort: 'new', from: '', to: '', tags: new Set(), kinds: new Set() };
+const params = new URLSearchParams(location.search);
+state.q = params.get('q') ?? ''; state.sort = params.get('sort') ?? 'new';
+state.from = params.get('from') ?? ''; state.to = params.get('to') ?? '';
+(params.get('tag') ?? '').split(',').filter(Boolean).forEach((t) => state.tags.add(t));
+(params.get('kind') ?? '').split(',').filter(Boolean).forEach((t) => state.kinds.add(t));
+
+const counts = (key) => {
+  const m = new Map();
+  DATA.forEach((a) => [].concat(a[key]).forEach((v) => m.set(v, (m.get(v) ?? 0) + 1)));
+  return [...m].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+};
+const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+
+function chips(host, key, set) {
+  host.replaceChildren();
+  counts(key).forEach(([v, n]) => {
+    const b = el('button', { className: 'chip', type: 'button' }, v, el('small', {}, String(n)));
+    b.setAttribute('aria-pressed', set.has(v));
+    b.onclick = () => { set.has(v) ? set.delete(v) : set.add(v); render(); };
+    host.append(b);
+  });
+}
+
+function filtered() {
+  const q = state.q.toLowerCase().trim();
+  const out = DATA.filter((a) =>
+    (!q || [a.title, a.description, ...a.tags].join(' ').toLowerCase().includes(q)) &&
+    [...state.tags].every((t) => a.tags.includes(t)) &&
+    (!state.kinds.size || state.kinds.has(a.kind)) &&
+    (!state.from || a.created.slice(0, 7) >= state.from) &&
+    (!state.to || a.created.slice(0, 7) <= state.to));
+  const cmp = { new: (a, b) => b.created.localeCompare(a.created), old: (a, b) => a.created.localeCompare(b.created), title: (a, b) => a.title.localeCompare(b.title) };
+  return out.sort(cmp[state.sort] ?? cmp.new);
+}
+
+function render() {
+  chips($('tags'), 'tags', state.tags);
+  chips($('kinds'), 'kind', state.kinds);
+  const list = filtered();
+  $('grid').replaceChildren(...list.map((a) => el('a', { className: 'card', href: './' + a.slug + '/' },
+    el('h2', {}, a.title), el('p', {}, a.description),
+    el('div', { className: 'foot' }, el('span', {}, a.kind), a.created, ...a.tags.map((t) => el('span', { className: 'tag' }, t))))));
+  $('count').textContent = list.length + ' of ' + DATA.length + ' artifacts';
+  $('empty').hidden = list.length > 0;
+  const active = state.q || state.from || state.to || state.tags.size || state.kinds.size;
+  $('clear').hidden = !active;
+  const p = new URLSearchParams();
+  if (state.q) p.set('q', state.q);
+  if (state.sort !== 'new') p.set('sort', state.sort);
+  if (state.from) p.set('from', state.from);
+  if (state.to) p.set('to', state.to);
+  if (state.tags.size) p.set('tag', [...state.tags].join(','));
+  if (state.kinds.size) p.set('kind', [...state.kinds].join(','));
+  history.replaceState(null, '', p.size ? '?' + p : location.pathname);
+}
+
+const clear = () => { Object.assign(state, { q: '', from: '', to: '' }); state.tags.clear(); state.kinds.clear(); sync(); render(); };
+const sync = () => { $('q').value = state.q; $('sort').value = state.sort; $('from').value = state.from; $('to').value = state.to; };
+let t; $('q').oninput = (e) => { clearTimeout(t); t = setTimeout(() => { state.q = e.target.value; render(); }, 120); };
+$('sort').onchange = (e) => { state.sort = e.target.value; render(); };
+$('from').onchange = (e) => { state.from = e.target.value; render(); };
+$('to').onchange = (e) => { state.to = e.target.value; render(); };
+$('clear').onclick = $('clear2').onclick = clear;
+sync(); render();
+</script>
+</body>
+</html>

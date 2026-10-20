@@ -1,0 +1,924 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ink: #1C1A17;
+    --ink-soft: #4A453D;
+    --muted: #8C8474;
+    --paper: #F5F2EA;
+    --surface: #ECE6D8;
+    --surface-2: #E1DACA;
+    --line: #D8D0BE;
+    --accent: #2B5F63;
+    --accent-soft: #DCE8E7;
+    --good: #3C8F5B;
+    --good-soft: #DFEEE2;
+    --warn: #C97D2E;
+    --warn-soft: #F5E4CD;
+    --critical: #B4432E;
+    --critical-soft: #F5DED7;
+    --shadow: 0 1px 2px rgba(28,26,23,0.06), 0 6px 16px rgba(28,26,23,0.05);
+    --radius: 10px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #EDE7D9;
+      --ink-soft: #C7BFAE;
+      --muted: #8F8776;
+      --paper: #16140F;
+      --surface: #201C15;
+      --surface-2: #2A241A;
+      --line: #3A3225;
+      --accent: #6FAFB0;
+      --accent-soft: #223333;
+      --good: #63BE85;
+      --good-soft: #1E3226;
+      --warn: #E3A557;
+      --warn-soft: #3A2C15;
+      --critical: #E27B62;
+      --critical-soft: #3A211B;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #EDE7D9;
+    --ink-soft: #C7BFAE;
+    --muted: #8F8776;
+    --paper: #16140F;
+    --surface: #201C15;
+    --surface-2: #2A241A;
+    --line: #3A3225;
+    --accent: #6FAFB0;
+    --accent-soft: #223333;
+    --good: #63BE85;
+    --good-soft: #1E3226;
+    --warn: #E3A557;
+    --warn-soft: #3A2C15;
+    --critical: #E27B62;
+    --critical-soft: #3A211B;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 8px 20px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Archivo', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.45;
+  }
+
+  ::selection { background: var(--accent); color: var(--paper); }
+
+  .mono {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  a { color: var(--accent); }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+
+  /* ---------- Masthead ---------- */
+  header.mast {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 18px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  header.mast .title-block h1 {
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  header.mast .title-block .sub {
+    color: var(--muted);
+    font-size: 0.95rem;
+    max-width: 62ch;
+  }
+  header.mast .stamp {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+  header.mast .stamp .src {
+    display: block;
+    color: var(--accent);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* ---------- Stat strip ---------- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 30px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+  }
+  .stat .num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.9rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .stat .label {
+    margin-top: 6px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .stat.critical .num { color: var(--critical); }
+  .stat.warn .num { color: var(--warn); }
+  .stat.good .num { color: var(--good); }
+  .stat.accent .num { color: var(--accent); }
+
+  /* ---------- Section shell ---------- */
+  section {
+    margin-bottom: 34px;
+  }
+  section > h2 {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.005em;
+    margin: 0 0 4px;
+  }
+  section > h2 .tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-weight: 600;
+  }
+  section > p.desc {
+    color: var(--muted);
+    font-size: 0.86rem;
+    margin: 0 0 16px;
+    max-width: 72ch;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  /* ---------- Two-column layout: stuck list + heatmap ---------- */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ---------- Stuck list ---------- */
+  .stuck-row {
+    display: grid;
+    grid-template-columns: 5px 44px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 16px 11px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .stuck-row:last-child { border-bottom: none; }
+  .stuck-row .stripe {
+    align-self: stretch;
+    border-radius: 3px;
+  }
+  .stuck-row .stripe.sev-3 { background: var(--critical); }
+  .stuck-row .stripe.sev-2 { background: var(--warn); }
+  .stuck-row .stripe.sev-1 { background: var(--good); opacity: 0.5; }
+
+  .stuck-row .id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .stuck-row .desc-col .t {
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 46ch;
+  }
+  .stuck-row .desc-col .p {
+    font-size: 0.74rem;
+    color: var(--muted);
+  }
+  .stuck-row .sweeps {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .stuck-row .sweeps b {
+    font-size: 1rem;
+    color: var(--critical);
+  }
+  .stuck-row .touched {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--muted);
+    text-align: right;
+    white-space: nowrap;
+    min-width: 72px;
+  }
+
+  /* ---------- Heatmap (move rate) ---------- */
+  .heatmap-body { padding: 16px; }
+  .heat-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 4px;
+    margin-bottom: 14px;
+  }
+  .heat-cell {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    background: var(--surface-2);
+    position: relative;
+    cursor: default;
+  }
+  .heat-cell[data-n="1"] { background: color-mix(in srgb, var(--good) 30%, var(--surface-2)); }
+  .heat-cell[data-n="2"] { background: color-mix(in srgb, var(--good) 55%, var(--surface-2)); }
+  .heat-cell[data-n="3"] { background: color-mix(in srgb, var(--good) 80%, var(--surface-2)); }
+  .heat-cell[data-n="hi"] { background: var(--good); }
+  .heat-legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    justify-content: flex-end;
+    margin-bottom: 18px;
+  }
+  .heat-legend .sw { width: 11px; height: 11px; border-radius: 3px; }
+
+  .move-stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-top: 1px solid var(--line);
+    font-size: 0.84rem;
+  }
+  .move-stat-row .v {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+  }
+  .move-callout {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: var(--warn-soft);
+    border-left: 3px solid var(--warn);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Quadrant chart ---------- */
+  .quad-wrap {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 20px;
+    padding: 18px;
+  }
+  @media (max-width: 860px) {
+    .quad-wrap { grid-template-columns: 1fr; }
+  }
+  canvas#quad { width: 100%; height: 360px; display: block; }
+  .quad-tooltip {
+    position: fixed;
+    z-index: 50;
+    pointer-events: none;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.74rem;
+    line-height: 1.4;
+    padding: 7px 10px;
+    border-radius: 7px;
+    box-shadow: var(--shadow);
+    max-width: 280px;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 0.08s ease, transform 0.08s ease;
+  }
+  .quad-tooltip.show { opacity: 1; transform: translateY(0); }
+  .quad-tooltip .tt-title {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: var(--paper);
+    margin-bottom: 2px;
+    white-space: normal;
+  }
+  .quad-tooltip .tt-meta { color: var(--paper); opacity: 0.62; }
+  .quad-legend { font-size: 0.8rem; }
+  .quad-legend h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 10px;
+  }
+  .quad-legend .row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .quad-legend .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    margin-top: 4px; flex: none;
+  }
+  .quad-legend .row div p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.76rem;
+  }
+  .quad-legend .row div b { font-size: 0.84rem; }
+
+  /* ---------- Project rollup table ---------- */
+  table.rollup {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+  }
+  table.rollup th {
+    text-align: left;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--ink);
+  }
+  table.rollup th.num, table.rollup td.num { text-align: right; }
+  table.rollup td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--line);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+  }
+  table.rollup td.proj-name {
+    font-family: 'Archivo', sans-serif;
+    font-weight: 600;
+    font-size: 0.86rem;
+  }
+  table.rollup tr:last-child td { border-bottom: none; }
+  .bar-cell { display: flex; align-items: center; gap: 8px; }
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface-2);
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 60px;
+  }
+  .bar-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+
+  /* ---------- Full ledger ---------- */
+  .ledger-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .ledger-controls input[type="text"] {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--paper);
+    color: var(--ink);
+    flex: 1;
+    min-width: 200px;
+  }
+  .ledger-controls input[type="text"]:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+  }
+  select#projFilter {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .ledger-scroll {
+    overflow-x: auto;
+    max-height: 520px;
+    overflow-y: auto;
+  }
+  table.ledger {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+    min-width: 760px;
+  }
+  table.ledger thead th {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    text-align: left;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 9px 12px;
+    border-bottom: 2px solid var(--ink);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+  }
+  table.ledger thead th:hover { color: var(--accent); }
+  table.ledger thead th .arrow { opacity: 0.4; margin-left: 3px; }
+  table.ledger td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  table.ledger td.num, table.ledger th.num {
+    font-family: 'IBM Plex Mono', monospace;
+    text-align: right;
+    white-space: nowrap;
+  }
+  table.ledger td.desc { max-width: 420px; }
+  table.ledger td.id-col {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--muted);
+  }
+  .chip {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .chip.critical { background: var(--critical-soft); color: var(--critical); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.good { background: var(--good-soft); color: var(--good); }
+  .chip.neutral { background: var(--surface-2); color: var(--muted); }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    font-size: 0.76rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .stat, .panel, .stuck-row { transition: transform 0.15s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <div class="title-block">
+      <h1>Task Control</h1>
+      <div class="sub">Full state of the Taskwarrior ledger — what's open, what hasn't moved, and how work actually clears versus how it looks like it should.</div>
+    </div>
+    <div class="stamp">
+      Generated 26 Aug 2026, 08:54 CEST
+      <span class="src">source: task status:pending / status:completed export</span>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat accent"><div class="num mono" id="statPending">–</div><div class="label">Pending</div></div>
+    <div class="stat critical"><div class="num mono" id="statOverdue">–</div><div class="label">Overdue</div></div>
+    <div class="stat warn"><div class="num mono" id="statStuck">–</div><div class="label">Stuck (3+ sweeps)</div></div>
+    <div class="stat"><div class="num mono" id="statBlocked">–</div><div class="label">Tagged blocked</div></div>
+    <div class="stat good"><div class="num mono" id="statClosed">–</div><div class="label">Closed, last 30d</div></div>
+  </div>
+
+  <section>
+    <h2>Where it gets stuck <span class="tag">ranked by momentum-sweep count</span></h2>
+    <p class="desc">Every unresolved sweep from the momentum tracker means the same task came back around and was passed over again. Sorted by how many times, then by how long since it was last touched at all.</p>
+    <div class="grid-2">
+      <div class="panel">
+        <div id="stuckList"></div>
+      </div>
+      <div class="panel heatmap-body">
+        <div style="font-size:0.78rem;font-weight:600;margin-bottom:10px;">Closes, last 30 days</div>
+        <div class="heat-grid" id="heatGrid"></div>
+        <div class="heat-legend">
+          <span>fewer</span>
+          <span class="sw" style="background:var(--surface-2)"></span>
+          <span class="sw" style="background:color-mix(in srgb, var(--good) 30%, var(--surface-2))"></span>
+          <span class="sw" style="background:color-mix(in srgb, var(--good) 55%, var(--surface-2))"></span>
+          <span class="sw" style="background:color-mix(in srgb, var(--good) 80%, var(--surface-2))"></span>
+          <span class="sw" style="background:var(--good)"></span>
+          <span>more</span>
+        </div>
+        <div class="move-stat-row"><span>Closed today</span><span class="v mono" id="mvToday"></span></div>
+        <div class="move-stat-row"><span>Closed prior 29 days</span><span class="v mono" id="mvPrior"></span></div>
+        <div class="move-stat-row"><span>Via reconcile sweep</span><span class="v mono" id="mvReconcile"></span></div>
+        <div class="move-callout">Movement is bursty, not steady — one day (today) accounts for 15 of 22 closes this month. The other 7 trickled in over three weeks. Work doesn't finish on its own; it clears when someone runs a sweep.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Urgency vs. neglect <span class="tag">quadrant view</span></h2>
+    <p class="desc">Each dot is one open task. Right = high Taskwarrior urgency score. Up = long since last touched. The top-right quadrant is the one that matters: urgent by the algorithm's own math, and still ignored.</p>
+    <div class="panel quad-wrap" style="position:relative;">
+      <canvas id="quad" width="760" height="360"></canvas>
+      <div class="quad-tooltip" id="quadTooltip"></div>
+      <div class="quad-legend">
+        <h3>Reading the plot</h3>
+        <div class="row"><span class="dot" style="background:var(--critical)"></span><div><b>Urgent &amp; stale</b><p>High urgency, untouched 14+ days — the real backlog.</p></div></div>
+        <div class="row"><span class="dot" style="background:var(--warn)"></span><div><b>Urgent, recent</b><p>High urgency but touched recently — actively being worked or freshly re-flagged.</p></div></div>
+        <div class="row"><span class="dot" style="background:var(--good)"></span><div><b>Low pressure</b><p>Low urgency, doesn't matter how stale — parked on purpose.</p></div></div>
+        <div class="row"><span class="dot" style="background:var(--muted)"></span><div><b>Fresh</b><p>Entered in the last 10 days, too new to judge.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>By project <span class="tag">rollup</span></h2>
+    <p class="desc">Where the 55 open tasks actually sit. Bar shows share of total pending; sweep total is summed friction across every task in that project.</p>
+    <div class="panel">
+      <table class="rollup">
+        <thead><tr>
+          <th>Project</th>
+          <th class="num">Pending</th>
+          <th style="width:180px;">Share</th>
+          <th class="num">Avg urgency</th>
+          <th class="num">Oldest untouched</th>
+          <th class="num">Sweep total</th>
+        </tr></thead>
+        <tbody id="rollupBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Full ledger <span class="tag">55 open tasks</span></h2>
+    <p class="desc">Filter and sort. "Touched" is days since the task was last modified in any way (annotation, priority change, etc) — not the same as progress.</p>
+    <div class="ledger-controls">
+      <input type="text" id="searchBox" placeholder="Filter by description, project, or id…">
+      <select id="projFilter"><option value="">All projects</option></select>
+    </div>
+    <div class="panel ledger-scroll">
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th data-key="id" class="num">ID<span class="arrow"></span></th>
+            <th data-key="proj">Project<span class="arrow"></span></th>
+            <th data-key="desc">Description<span class="arrow"></span></th>
+            <th data-key="urgency" class="num">Urgency<span class="arrow"></span></th>
+            <th data-key="mod" class="num">Touched<span class="arrow"></span></th>
+            <th data-key="sweeps" class="num">Sweeps<span class="arrow"></span></th>
+            <th data-key="due" class="num">Due<span class="arrow"></span></th>
+          </tr>
+        </thead>
+        <tbody id="ledgerBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>Task Control — read-only view of Taskwarrior. Nothing here writes to the ledger.</span>
+    <span>Built for the task-reconcile / chief-of-staff workflow</span>
+  </footer>
+
+</div>
+
+<script>
+const RAW = {"pending": [[1, "citizenship", "Request Bildungszeit from employer for 2-week intensive German B1 course", 29.34, 79, 4, 6, -43, "H", ["language", "work"], 0], [2, "citizenship", "Order birth certificate certified German translation via justiz-dolmetscher.de", 23.34, 79, 4, 3, -43, "", ["citizenship", "legal"], 0], [3, "Personal.Proposal", "Choose ring style, size, metal, stone (size 8 based on Oura ring)", 23.24, 99, 7, 2, 4, "H", [], 0], [4, "citizenship", "Enroll in German B1 language course", 21.33, 79, 0, 1, -11, "H", ["citizenship", "language"], 0], [5, "Personal.Romance", "Set time with Claudia for serious talk about romance", 20.54, 99, 0, 1, -27, "H", [], 1], [6, "citizenship", "Book submission appointment at Staatsangehörigkeitsbehörde Berlin", 19.74, 79, 0, 4, 19, "H", ["citizenship", "legal"], 0], [7, "Personal.Language", "Reach B1.1 70%", 19.24, 99, 3, 6, -88, "M", ["goal"], 0], [8, "Dev.GrandmaRemento", "Finish Moon-landing 1969 story: resolve open Qs (place name Buchiniva/Guichivo, attribute 'son mentiras', confirm luna.mp3 beat), read aloud w/ Spanish speaker, lock voice, integrate into decades.ts 1970s-1 + 1970s-audio-1", 17.02, 56, 6, 0, null, "H", ["story"], 0], [9, "citizenship", "Enroll in 2-week intensive German B1 Bildungszeit course (Berlin)", 16.23, 79, 3, 1, -26, "H", ["language"], 0], [10, "Personal.Finance", "Get semanas cotizadas from IMSS Digital (serviciosdigitales.imss.gob.mx, needs CURP + NSS 43048210231) - determines lump-sum vs pension at 60", 15.85, 7, 7, 0, null, "H", ["afore"], 0], [11, "Personal.Finance", "Confirm Claudia income + equity for joint property purchase — gate: else pivot Brandenburg-solo", 15.34, 76, 76, 0, 5, "H", ["property"], 0], [12, "Dev.GrandmaRemento", "Generate story: Being a poor child (1930s) — draft from transcripts, voice-check, integrate into site", 14.92, 56, 6, 0, null, "M", ["story"], 0], [13, "language", "Enroll and pass B1 language exam (telc/Goethe)", 14.44, 99, 79, 0, 35, "M", ["goal"], 0], [14, "Personal.Finance", "Book fee-only Honorarberater (BFP/VDH register) — required before BU buy, Privat-Rente surrender decision, Rürup Nettotarif switch, mortgage commit", 14.31, 52, 52, 0, 5, "H", ["advisor"], 0], [15, "job-search", "+job-application Apply: Perplexity Backend SWE, Search Crawler (Berlin/Belgrade/London)", 14.05, 27, 2, 1, -22, "", [], 0], [16, "Personal.Finance", "Verify INFONAVIT 2026 migrant/independent-worker credit eligibility directly with INFONAVIT - detailed rules were pending publication; blocks any Mexico property decision", 13.85, 7, 7, 0, null, "M", ["afore", "infonavit"], 0], [17, "Personal.Travel", "Book Japan trip", 10.74, 99, 99, 0, 491, "H", [], 0], [18, "personal", "Marriage proposal", 10.73, 79, 79, 0, 126, "H", ["family", "personal"], 0], [19, "morocco-trip", "Book Amsterdam airport hotel for Morocco transfer (2 nights: Oct 22 outbound + Oct 30 return)", 9.29, 66, 66, 0, 5, "", ["amsterdam", "travel"], 0], [20, "Personal.Finance", "Get BU disability insurance quotes — 3+ providers, €3,000/mo cover, expect €180–280/mo", 9.22, 76, 6, 0, null, "H", ["insurance"], 0], [21, "madrid-shakira", "Plan Madrid trip for Shakira concert", 9.18, 64, 64, 0, 5, "", ["travel"], 0], [22, "Personal.Fitness", "Reach 75 kg weight", 8.64, 99, 94, 0, 34, "M", ["goal"], 0], [23, "Personal.Proposal", "Arrange photographer/videographer for proposal", 8.64, 99, 94, 0, 34, "M", [], 0], [24, "Personal.Language", "B1 preparation — practice tests online", 8.46, 79, 79, 0, 5, "", ["goal"], 0], [25, "Personal.Finance", "Ask cross-border Steuerberater: AFORE SIEFORE = pension wrapper (deferred) or foreign fund under InvStG (annual Vorabpauschale)? Also confirm foreign-account reporting duty", 7.94, 7, 7, 0, null, "H", ["afore", "steuer"], 0], [26, "Personal.Finance", "Confirm AFORE SURA correctly registered and contact data current via CONSAR 'Localiza tu AFORE' / AforeMovil (CURP + NSS)", 7.84, 7, 7, 0, null, "H", ["afore"], 0], [27, "Dev.GrandmaRemento", "Tomasa luxury style uplift with Claude Design pass", 7.12, 58, 58, 0, null, "M", ["design", "frontend", "github"], 0], [28, "Personal.Finance", "Request Rückkaufswert + paid-up Kostenausweis for Privat-Rente 39822613 from Swiss Life Select — BEFORE any Beitragsfreistellung", 7.02, 76, 76, 0, null, "M", ["pension"], 0], [29, "Dev.GrandmaRemento", "Build audio-generation pipeline (scripts/generate-audio.ts, ElevenLabs TTS + voice clone) — purpurit #11", 7.01, 56, 56, 0, null, "M", ["tooling"], 0], [30, "Personal.Finance", "Open ETF Sparplan €300/mo (MSCI World or FTSE All-World) + file Freistellungsauftrag €1,000", 6.92, 76, 76, 0, null, "M", ["investing"], 0], [31, "Personal.Finance", "Open dedicated Tagesgeld, earmark €42,988 property equity", 6.92, 76, 76, 0, null, "M", ["property"], 0], [32, "Personal.Fitness", "Aim for 74 kg weight", 6.54, 99, 94, 0, 65, "L", ["goal"], 0], [33, "Personal.Fitness", "Reach level blue in CrossFit", 6.54, 99, 94, 0, 65, "L", ["goal"], 0], [34, "Personal.Proposal", "Plan celebration after proposal - dinner/party/getaway", 6.54, 99, 94, 0, 49, "L", [], 0], [35, "Personal.Finance", "Mortgage: require 15yr Zinsbindung (~4.12%), NOT 10yr — 10yr goes cash-flow negative under refi stress. Condition of Scenario C", 5.98, 52, 52, 0, null, "M", ["property"], 0], [36, "job-search", "+job-application Submit application: Software Engineer (Open Source), 4TU.ResearchData - TU Delft (via SuccessFactors login, package ready)", 5.83, 16, 16, 0, 10, "", [], 0], [37, "Personal.Finance", "Check AFORE SURA commission and CONSAR rendimiento neto rank; free traspaso if another AFORE ranks better (~EUR 900-1200 over 15 years)", 5.74, 7, 7, 0, null, "M", ["afore"], 0], [38, "morocco-trip", "Plan Morocco activities Oct 24-30 — coordinate with Helena & Hassan wedding guests, Merzouga/Erg Chebbi dunes", 5.46, 66, 66, 0, 19, "", ["morocco", "travel"], 0], [39, "citizenship", "Enroll and pass Einbürgerungstest (Leben in Deutschland — civics)", 5.43, 79, 58, 0, 35, "", ["legal"], 0], [40, "Personal.Finance", "Reclaim 2023 Riester Zulage (€0 credited) via Allianz/ZfA", 4.82, 76, 76, 0, null, "L", ["pension"], 0], [41, "Personal.Finance", "Execute D6 spending restructure: VISA sole daily channel, recreate €450/mo savings standing order on 28th (old €100 order silently stopped Jan 2026), cap travel pot €500/mo. Measure 3mo, re-reconcile Oct 2026", 4.44, 44, 44, 0, 35, "", ["money"], 0], [42, "Personal.Proposal", "Scout proposal location", 3.64, 99, 94, 0, 19, "M", [], 0], [43, "Personal.Finance", "Close remaining pre-2016 pension gap: 2010-2016 UK years - check HMRC NI record (EU Reg 883/2004, pre-Brexit)", 3.64, 7, 7, 0, null, "L", ["pension"], 0], [44, "citizenship", "Gather documents for German citizenship application", 3.46, 79, 79, 0, 5, "", ["legal"], 0], [45, "dev", "Close or merge stale PRs: finches#3 (fix, Jan-05), nightingale#5 (SnowyOwl automated task, Dec-24)", 3.1, 92, 0, 0, null, "", ["pr"], 1], [46, "purpurit", "Transcribe 4 remaining purpurit recordings note:Needs OPENAI_API_KEY with credits. Files: sunday-21-32 (also missing from script), nov20-08-05, nov20-13-12, nov20-13-36. After transcription run add-speaker-labels.ts.", 2.32, 58, 56, 0, null, "", [], 0], [47, "job-search", "Apply: Software Engineer (Open Source), 4TU.ResearchData - TU Delft", 2.09, 17, 16, 0, null, "", [], 0], [48, "purpurit", "Add tommy-01-Sunday/Sunday-at-21-32.m4a to transcription script; transcribe 4 pending Tomasa recordings (blocked on OPENAI_API_KEY credits), then run add-speaker-labels.ts", 2.04, 44, 44, 0, null, "", ["blocked"], 0], [49, "shoebill", "Wire local Postgres+pgvector via docker so mpa load/join share state (499-edge join)", 1.93, 24, 21, 0, null, "", [], 0], [50, "Dev.GrandmaRemento", "Publish RevealJS site — final build, deploy, share digital copy with family", 1.81, 56, 56, 0, null, "M", ["publish"], 0], [51, "shoebill", "Verify LFT seed placeholder dates/tallies against SIL + Gaceta + DOF - currently unverified in committed data files", 1.13, 24, 21, 0, null, "", [], 0], [52, "Personal.Finance", "Decide: deploy INFONAVIT subaccount (MXN 177,868) into Mexican property, or leave locked to age 60. Must NOT compete with Berlin/Brandenburg deposit", 0.84, 7, 7, 0, null, "M", ["afore", "infonavit"], 0], [53, "citizenship", "Submit German citizenship application", -0.37, 79, 79, 0, 96, "", ["legal"], 0], [54, "Personal.Finance", "Update CURP Biometrica and complete INFONAVIT 'Saber mas para decidir mejor' course - prerequisites for the INFONAVIT route", -1.26, 7, 7, 0, null, "L", ["afore", "infonavit"], 0], [55, "Personal.Finance", "Add AFORE lump sum (~EUR 36k central case, Jan 2042) to retirement projection as pre-GRV bridge capital (GRV starts 01.02.2049)", -1.36, 7, 7, 0, null, "L", ["afore"], 0]], "closed_recent": [[0, "charity-run", "Key long run 17-18km Sun 9 Aug 09:00 (rehearse race slot; Sat 8 blocked)", 0, 1], [0, "Personal.Finance", "Clarify €19,978 contribution anomaly on contract 39822613 with Swiss Life Select", 0, 0], [0, "charity-run", "Final total, allocate donations to projects, close campaign", 0, 1], [0, "chief-of-staff", "Review GitHub Projects task backend PRD and decide on implementation", 0, 0], [0, "charity-run", "Post 'five days to go' update", 0, 1], [0, "marketplace-claude", "Push branch claude/openclaw-automation-patterns-DvNSZ and open PR (automation patterns: qurl ledger, schedule.json x3, morning-briefing). Needs: gh auth login -h github.com first. Exclude state.db + loose untracked files.", 0, 1], [0, "Personal.Finance", "Send Volkswohl Bund direct request re contract 39822613 — cancel 10%/yr Dynamik (keep premium at €266.20/mo) + request paid-up-state cost disclosure (info only, do NOT execute Beitragsfreistellung)", 0, 0], [0, "claude", "Fix Claude Code agent init crash: de-volume settings symlink + PATH-based node in hooks (kjgarza/scratchpad#4)", 0, 1], [0, "charity-run", "Post 4: race-day finish post (all channels, with photo)", 0, 1], [0, "charity-run", "Decide CrossFit trade: 3rd run replaces a WOD, not adds", 0, 1], [0, "charity-run", "Ask betterplace support: SEPA-Lastschrift on Spendenaktionen + confirm 2.5% vs 2.8% fee", 0, 1], [0, "Personal.Fitness", "Run half marathon", 0, 1], [0, "charity-run", "Post 17-18km long run update to betterplace + Strava (credibility post)", 0, 1], [0, "charity-run", "Post 5: final total, then close campaign", 0, 1], [0, "charity-run", "Post 2: taper-week social post (LinkedIn + X)", 0, 1], [0, "charity-run", "Email/call Berliner Stadtmission spendenservice re material + Kältehilfe project ID", 0, 1], [0, "charity-run", "Run Generalprobe half marathon 21.1km Berlin-Steglitz 09:00", 0, 1], [0, "Dev.GrandmaRemento", "Clean grandma transcripts x3 - fill gaps using AI", 5, 0], [0, "job-search", "Apply NVIDIA Munich - Senior SWE Applied AI (JR2019145)", 21, 0], [0, "charity-run", "Create+publish betterplace Spendenaktion (2287+64731, EN copy, no target)", 21, 0], [0, "job-search", "Submit Perplexity application - MTS Software Engineer Data Flywheel", 21, 0], [0, "job-search", "Apply: Anthropic Engineering Manager, Connectivity +job-application", 27, 0], [0, "job-search", "Apply: Cohere Engineering Manager, Verticals +job-application", 27, 0], [0, "job-search", "Apply: LangChain Senior Platform Engineer, Ingestion +job-application", 27, 0]]};
+
+// pending row: [id, proj, desc, urgency, age, mod, sweeps, due_days, priority, tags, reconciled]
+const pending = RAW.pending.map(r => ({
+  id:r[0], proj:r[1], desc:r[2], urgency:r[3], age:r[4], mod:r[5], sweeps:r[6],
+  due:r[7], priority:r[8], tags:r[9], reconciled:r[10]
+}));
+const closedRecent = RAW.closed_recent.map(r => ({proj:r[1], desc:r[2], daysAgo:r[3], reconciled:r[4]}));
+
+function fmtDue(d){
+  if (d === null || d === undefined) return '—';
+  if (d < 0) return Math.abs(d) + 'd over';
+  if (d === 0) return 'today';
+  return 'in ' + d + 'd';
+}
+function fmtTouched(d){
+  if (d === 0) return 'today';
+  return d + 'd ago';
+}
+
+// ---------- Stats ----------
+document.getElementById('statPending').textContent = pending.length;
+document.getElementById('statOverdue').textContent = pending.filter(t => t.due !== null && t.due < 0).length;
+document.getElementById('statStuck').textContent = pending.filter(t => t.sweeps >= 3).length;
+document.getElementById('statBlocked').textContent = pending.filter(t => t.tags.includes('blocked')).length;
+document.getElementById('statClosed').textContent = closedRecent.length;
+
+// ---------- Stuck list ----------
+const stuckList = document.getElementById('stuckList');
+const stuck = [...pending].filter(t => t.sweeps > 0).sort((a,b) => b.sweeps - a.sweeps || b.mod - a.mod).slice(0, 10);
+stuck.forEach(t => {
+  const sev = t.sweeps >= 4 ? 3 : t.sweeps >= 2 ? 2 : 1;
+  const row = document.createElement('div');
+  row.className = 'stuck-row';
+  row.innerHTML = `
+    <div class="stripe sev-${sev}"></div>
+    <div class="id mono">#${t.id}</div>
+    <div class="desc-col">
+      <span class="t">${t.desc}</span>
+      <span class="p">${t.proj}</span>
+    </div>
+    <div class="sweeps"><b>${t.sweeps}</b> sweep${t.sweeps===1?'':'s'}</div>
+    <div class="touched">touched ${fmtTouched(t.mod)}</div>
+  `;
+  stuckList.appendChild(row);
+});
+if (stuck.length === 0) {
+  stuckList.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:0.85rem;">Nothing carrying a sweep flag right now.</div>';
+}
+
+// ---------- Heatmap ----------
+const heatGrid = document.getElementById('heatGrid');
+const dayCounts = new Array(30).fill(0);
+closedRecent.forEach(c => { if (c.daysAgo < 30) dayCounts[29 - c.daysAgo]++; });
+dayCounts.forEach((n, i) => {
+  const cell = document.createElement('div');
+  cell.className = 'heat-cell';
+  const level = n === 0 ? '0' : n === 1 ? '1' : n === 2 ? '2' : n === 3 ? '3' : 'hi';
+  cell.setAttribute('data-n', level);
+  cell.title = `${29 - i} days ago: ${n} closed`;
+  heatGrid.appendChild(cell);
+});
+document.getElementById('mvToday').textContent = closedRecent.filter(c => c.daysAgo === 0).length;
+document.getElementById('mvPrior').textContent = closedRecent.filter(c => c.daysAgo > 0).length;
+document.getElementById('mvReconcile').textContent = closedRecent.filter(c => c.reconciled).length + ' / ' + closedRecent.length;
+
+// ---------- Rollup by project ----------
+const byProj = {};
+pending.forEach(t => {
+  if (!byProj[t.proj]) byProj[t.proj] = { count:0, urgencySum:0, maxMod:0, sweepSum:0 };
+  const p = byProj[t.proj];
+  p.count++; p.urgencySum += t.urgency; p.maxMod = Math.max(p.maxMod, t.mod); p.sweepSum += t.sweeps;
+});
+const rollupRows = Object.entries(byProj).map(([proj, p]) => ({
+  proj, count: p.count, avgUrgency: p.urgencySum / p.count, maxMod: p.maxMod, sweepSum: p.sweepSum
+})).sort((a,b) => b.avgUrgency - a.avgUrgency);
+const maxCount = Math.max(...rollupRows.map(r => r.count));
+const rollupBody = document.getElementById('rollupBody');
+rollupRows.forEach(r => {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="proj-name">${r.proj}</td>
+    <td class="num">${r.count}</td>
+    <td><div class="bar-cell"><div class="bar-track"><div class="bar-fill" style="width:${(r.count/maxCount*100).toFixed(0)}%"></div></div></div></td>
+    <td class="num">${r.avgUrgency.toFixed(1)}</td>
+    <td class="num">${r.maxMod}d</td>
+    <td class="num">${r.sweepSum}</td>
+  `;
+  rollupBody.appendChild(tr);
+});
+
+// ---------- Quadrant canvas ----------
+const canvas = document.getElementById('quad');
+const ctx = canvas.getContext('2d');
+function getCSSVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+let quadPoints = [];
+
+function drawQuad(){
+  const W = canvas.width, H = canvas.height;
+  const pad = { l:46, r:20, t:16, b:36 };
+  ctx.clearRect(0,0,W,H);
+  quadPoints = [];
+
+  const ink = getCSSVar('--ink-soft');
+  const line = getCSSVar('--line');
+  const muted = getCSSVar('--muted');
+  const critical = getCSSVar('--critical');
+  const warn = getCSSVar('--warn');
+  const good = getCSSVar('--good');
+
+  const maxUrg = 30, maxMod = 100;
+  const plotW = W - pad.l - pad.r, plotH = H - pad.t - pad.b;
+  const xScale = u => pad.l + (u/maxUrg)*plotW;
+  const yScale = m => pad.t + plotH - (Math.min(m,maxMod)/maxMod)*plotH;
+
+  // gridlines
+  ctx.strokeStyle = line;
+  ctx.lineWidth = 1;
+  ctx.font = "11px 'IBM Plex Mono', monospace";
+  ctx.fillStyle = muted;
+  [0,10,20,30].forEach(u => {
+    const x = xScale(u);
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t+plotH); ctx.stroke();
+    ctx.fillText(u, x-6, H-pad.b+16);
+  });
+  [0,25,50,75,100].forEach(m => {
+    const y = yScale(m);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W-pad.r, y); ctx.stroke();
+    ctx.fillText(m+'d', 6, y+4);
+  });
+
+  // axis labels
+  ctx.fillStyle = ink;
+  ctx.font = "600 11px 'Archivo', sans-serif";
+  ctx.fillText('Taskwarrior urgency →', pad.l, H-6);
+  ctx.save();
+  ctx.translate(14, pad.t+10);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('days untouched →', 0, 0);
+  ctx.restore();
+
+  // points
+  pending.forEach(t => {
+    const x = xScale(Math.max(0, Math.min(t.urgency, maxUrg)));
+    const y = yScale(t.mod);
+    let color;
+    if (t.age <= 10) color = muted;
+    else if (t.urgency >= 12 && t.mod >= 14) color = critical;
+    else if (t.urgency >= 12) color = warn;
+    else color = good;
+    ctx.beginPath();
+    ctx.arc(x, y, 4.2, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.85;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    quadPoints.push({ x, y, t });
+  });
+}
+drawQuad();
+window.addEventListener('resize', () => {
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width; canvas.height = 360;
+  drawQuad();
+});
+const matcher = window.matchMedia('(prefers-color-scheme: dark)');
+matcher.addEventListener('change', drawQuad);
+
+// ---------- Quadrant hover tooltip ----------
+const quadTooltip = document.getElementById('quadTooltip');
+let hoveredPoint = null;
+
+function pointAt(clientX, clientY){
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (clientX - rect.left) * scaleX;
+  const cy = (clientY - rect.top) * scaleY;
+  let closest = null, closestDist = Infinity;
+  quadPoints.forEach(p => {
+    const d = Math.hypot(p.x - cx, p.y - cy);
+    if (d < closestDist) { closestDist = d; closest = p; }
+  });
+  const hitRadius = 9 * scaleX;
+  return closestDist <= hitRadius ? closest : null;
+}
+
+canvas.addEventListener('mousemove', e => {
+  const hit = pointAt(e.clientX, e.clientY);
+  if (!hit) {
+    if (hoveredPoint) { hoveredPoint = null; quadTooltip.classList.remove('show'); canvas.style.cursor = ''; }
+    return;
+  }
+  hoveredPoint = hit;
+  canvas.style.cursor = 'pointer';
+  const t = hit.t;
+  quadTooltip.innerHTML = `
+    <div class="tt-title">#${t.id} — ${t.desc}</div>
+    <div class="tt-meta">${t.proj} · urgency ${t.urgency.toFixed(1)} · touched ${fmtTouched(t.mod)}${t.sweeps ? ' · ' + t.sweeps + ' sweep' + (t.sweeps===1?'':'s') : ''}</div>
+  `;
+  quadTooltip.style.left = (e.clientX + 14) + 'px';
+  quadTooltip.style.top = (e.clientY + 14) + 'px';
+  quadTooltip.classList.add('show');
+});
+canvas.addEventListener('mouseleave', () => {
+  hoveredPoint = null;
+  quadTooltip.classList.remove('show');
+  canvas.style.cursor = '';
+});
+
+// ---------- Full ledger ----------
+const ledgerBody = document.getElementById('ledgerBody');
+const searchBox = document.getElementById('searchBox');
+const projFilter = document.getElementById('projFilter');
+let sortKey = 'urgency', sortDir = -1;
+
+[...new Set(pending.map(t => t.proj))].sort().forEach(p => {
+  const opt = document.createElement('option');
+  opt.value = p; opt.textContent = p;
+  projFilter.appendChild(opt);
+});
+
+function sweepChip(t){
+  if (t.sweeps >= 4) return `<span class="chip critical">${t.sweeps}</span>`;
+  if (t.sweeps >= 1) return `<span class="chip warn">${t.sweeps}</span>`;
+  return `<span class="chip neutral">0</span>`;
+}
+function dueChip(t){
+  if (t.due === null) return '<span class="chip neutral">—</span>';
+  if (t.due < 0) return `<span class="chip critical">${fmtDue(t.due)}</span>`;
+  if (t.due <= 7) return `<span class="chip warn">${fmtDue(t.due)}</span>`;
+  return `<span class="chip good">${fmtDue(t.due)}</span>`;
+}
+
+function renderLedger(){
+  const q = searchBox.value.toLowerCase();
+  const pf = projFilter.value;
+  let rows = pending.filter(t =>
+    (!pf || t.proj === pf) &&
+    (!q || t.desc.toLowerCase().includes(q) || t.proj.toLowerCase().includes(q) || String(t.id).includes(q))
+  );
+  rows.sort((a,b) => {
+    let av = a[sortKey], bv = b[sortKey];
+    if (sortKey === 'due') { av = av===null?9999:av; bv = bv===null?9999:bv; }
+    if (typeof av === 'string') return sortDir * av.localeCompare(bv);
+    return sortDir * (av - bv);
+  });
+  ledgerBody.innerHTML = rows.map(t => `
+    <tr>
+      <td class="id-col num">#${t.id}</td>
+      <td>${t.proj}</td>
+      <td class="desc">${t.desc}</td>
+      <td class="num">${t.urgency.toFixed(1)}</td>
+      <td class="num">${fmtTouched(t.mod)}</td>
+      <td class="num">${sweepChip(t)}</td>
+      <td class="num">${dueChip(t)}</td>
+    </tr>
+  `).join('');
+}
+searchBox.addEventListener('input', renderLedger);
+projFilter.addEventListener('change', renderLedger);
+document.querySelectorAll('table.ledger thead th').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.key;
+    if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = -1; }
+    document.querySelectorAll('table.ledger thead .arrow').forEach(a => a.textContent = '');
+    th.querySelector('.arrow').textContent = sortDir === -1 ? ' ↓' : ' ↑';
+    renderLedger();
+  });
+});
+renderLedger();
+</script>
+</body>
+</html>
+
+</body></html>

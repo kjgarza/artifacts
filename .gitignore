@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+._*
+
+# Build and tooling
+_site/
+node_modules/
+*.log
+
+# Local Claude Code settings (the project skill in .claude/skills/ stays tracked)
+.claude/settings.local.json
+.claude.local.md
+
+# Editors
+.vscode/
+.idea/
+*.swp
